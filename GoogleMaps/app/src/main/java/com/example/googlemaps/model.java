@@ -3,12 +3,14 @@ package com.example.googlemaps;
 public class model {
     private String name;
     //private String type;
-    private String rating;
+    private String latitude;
+    private String longitude;
 
-    public model(String name, String rating){
+    public model(String name, String latitude, String longitude){
         this.name = name;
         //this.type = type;
-        this.rating = rating;
+        this.latitude = latitude;
+        this.longitude = longitude;
     }
 
     public String getName() {
@@ -27,11 +29,19 @@ public class model {
 //        this.type = type;
 //    }
 
-    public String getRating() {
-        return rating;
+    public String getLatitude() {
+        return latitude;
     }
 
-    public void setRating(String rating) {
-        this.rating = rating;
+    public void setLatitude(String latitude) {
+        this.latitude = latitude;
+    }
+
+    public String getLongitude() {
+        return longitude;
+    }
+
+    public void setLongitude(String longitude) {
+        this.longitude = longitude;
     }
 }

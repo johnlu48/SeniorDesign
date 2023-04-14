@@ -1,15 +1,33 @@
 package com.example.googlemaps;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.Manifest;
+import android.annotation.SuppressLint;
+import android.app.Activity;
+import android.content.Context;
+import android.content.pm.PackageManager;
+import android.location.Location;
 import android.location.LocationManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.RelativeLayout;
+import android.widget.Toast;
+
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationListener;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -20,6 +38,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.security.Permission;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -30,7 +49,11 @@ public class MainActivity extends AppCompatActivity {
     private LocationManager locationManager;
     private ArrayList<model> itemsList = new ArrayList<>();
     private MyAdapter adapter;
+    private FusedLocationProviderClient mFusedLocationClient;
     private int permissionCode = 1;
+    private double latitude;
+    private double longitude;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,10 +64,19 @@ public class MainActivity extends AppCompatActivity {
 
         recycler = findViewById(R.id.recycler_view);
 
-        double latitude = 30.288765;
-        double longitude = -97.748341;
+        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        if(ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED){
+            ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION},permissionCode);
+        }
+        Location location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+        latitude = location.getLatitude();
+        longitude = location.getLongitude();
+        String pagetoken = "";
+        //double latitude = 30.288765;
+        //double longitude = -97.748341;
 
-        getData(longitude, latitude);
+
+        getData(longitude, latitude, pagetoken);
         adapter = new MyAdapter(this, itemsList);
         recycler.setAdapter(adapter);
         recycler.setLayoutManager(new LinearLayoutManager(this));
@@ -52,26 +84,28 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-//    @Override
-//    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-//        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-//        if (requestCode == permissionCode) {
-//            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-//                Toast.makeText(this, "Permission Granted", Toast.LENGTH_SHORT).show();
-//            } else {
-//                Toast.makeText(this, "Allow permissions to view location", Toast.LENGTH_SHORT).show();
-//                finish();
-//            }
-//        }
-//    }
 
-    private void getData(double longitude, double latitude) {
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if(requestCode==permissionCode){
+            if(grantResults.length > 0 && grantResults[0]==PackageManager.PERMISSION_GRANTED){
+                Toast.makeText(this, "Permission Granted", Toast.LENGTH_SHORT).show();
+            }else{
+                Toast.makeText(this, "Allow permissions to view location", Toast.LENGTH_SHORT).show();
+                finish();
+            }
+        }
+    }
+
+    private void getData(double longitude, double latitude, String pagetoken) {
         home.setVisibility(View.VISIBLE);
-        latitude = 30.288765;
-        longitude = -97.748341;
+        //latitude = 30.288765;
+        //longitude = -97.748341;
 //        latitude = 32.93119;
 //        longitude = -96.71530;
-        String url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=" + latitude + "," + longitude + "&radius=500&key=AIzaSyBsTG0CHdXfAe9q-9gpP34zKxwn_wpiEnM";
+        String url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=" + latitude + "," + longitude + "&radius=100&key=AIzaSyBsTG0CHdXfAe9q-9gpP34zKxwn_wpiEnM"+ "&pagetoken="+pagetoken;
         new PlaceTask().execute(url);
     }
 
@@ -138,10 +172,10 @@ public class MainActivity extends AppCompatActivity {
             for(int i = 0; i <hashMaps.size(); i++){
                 HashMap<String,String> hashMapList = hashMaps.get(i);
                 String name = hashMapList.get("name");
-                String type = hashMapList.get("type");
-                String rating = hashMapList.get("rating");
-                if(name != null || type != null || rating != null) {
-                    itemsList.add(new model(name, rating));
+                String latitude = hashMapList.get("latitude");
+                String longitude = hashMapList.get("longitude");
+                if(name != null || latitude != null || longitude != null) {
+                    itemsList.add(new model(name, "lat: " + latitude, "lng: " + longitude));
                 }
             }
             create(itemsList);

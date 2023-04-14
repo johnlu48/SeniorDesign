@@ -9,6 +9,8 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.w3c.dom.Text;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,7 +35,8 @@ public class MyAdapter extends RecyclerView.Adapter<MyAdapter.ViewHolder> {
         model listItem = listItems.get(position);
         holder.name.setText(listItem.getName());
         //holder.type.setText(listItem.getType());
-        holder.rating.setText(listItem.getRating());
+        holder.latitude.setText(listItem.getLatitude());
+        holder.longitude.setText(listItem.getLongitude());
     }
 
     @Override
@@ -44,14 +47,16 @@ public class MyAdapter extends RecyclerView.Adapter<MyAdapter.ViewHolder> {
     public class ViewHolder extends RecyclerView.ViewHolder{
         TextView name;
         //TextView type;
-        TextView rating;
+        TextView latitude;
+        TextView longitude;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
 
             name = itemView.findViewById(R.id.name);
             //type = itemView.findViewById(R.id.type);
-            rating = itemView.findViewById(R.id.rating);
+            latitude = itemView.findViewById(R.id.latitude);
+            longitude = itemView.findViewById(R.id.longitude);
         }
     }
 }

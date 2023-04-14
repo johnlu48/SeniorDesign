@@ -37,13 +37,22 @@
         <!--            android:textColor="@color/white" />-->
 
         <TextView
-            android:id="@+id/rating"
+            android:id="@+id/latitude"
             android:layout_width="47dp"
             android:layout_height="wrap_content"
             android:layout_centerVertical="true"
             android:layout_marginLeft="54dp"
             android:layout_toRightOf="@+id/name"
-            android:text="rating"
+            android:text="latitude"
+            android:textColor="@color/white" />
+        <TextView
+            android:id="@+id/longitude"
+            android:layout_width="47dp"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:layout_marginLeft="54dp"
+            android:layout_toRightOf="@+id/latitude"
+            android:text="longitude"
             android:textColor="@color/white" />
 
 
