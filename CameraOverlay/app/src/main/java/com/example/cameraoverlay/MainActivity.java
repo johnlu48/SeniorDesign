@@ -28,12 +28,16 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private ListenableFuture<ProcessCameraProvider> cameraProviderFuture;
     PreviewView previewView;
     TextView degreeVal, directionVal;
-    private float currentDegree = 0f;
     private SensorManager mSensorManager;
     private Sensor accelerometer;
     private Sensor magnetometer;
 
     private String[] directionLabels = {"N", "NE", "E", "SE", "S", "SW", "W", "NW"};
+
+    private float[] mGravity = new float[3];
+    private float[] mGeomagnetic = new float[3];
+    private float[] mRotationMatrix = new float[9];
+    private float[] mOrientation = new float[3];
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -82,8 +86,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     protected void onResume() {
         super.onResume();
 
-        //mSensorManager.registerListener(this, mSensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION),
-         //       SensorManager.SENSOR_DELAY_GAME);
         mSensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_UI);
         mSensorManager.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_UI);
     }
@@ -95,41 +97,27 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         mSensorManager.unregisterListener(this);
     }
 
-    float[] mGravity;
-    float[] mGeomagnetic;
-
     @Override
     public void onSensorChanged(SensorEvent event) {
-        float azimuth = 0;
-        if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER)
-            mGravity = event.values;
-        if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD)
-            mGeomagnetic = event.values;
-        if (mGravity != null && mGeomagnetic != null) {
-            float R[] = new float[9];
-            float I[] = new float[9];
-            boolean success = SensorManager.getRotationMatrix(R, I, mGravity, mGeomagnetic);
-            if (success) {
-                float orientation[] = new float[3];
-                SensorManager.getOrientation(R, orientation);
-                azimuth = (float) Math.toDegrees(orientation[0]);
-                if (azimuth < 0.0f) {
-                    azimuth += 360.0f;
-                }
+        if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+            System.arraycopy(event.values, 0, mGravity, 0, event.values.length);
+        } else if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD) {
+            System.arraycopy(event.values, 0, mGeomagnetic, 0, event.values.length);
+        }
+        boolean success = SensorManager.getRotationMatrix(mRotationMatrix, null, mGravity, mGeomagnetic);
+        if (success) {
+            SensorManager.getOrientation(mRotationMatrix, mOrientation);
+            float azimuth = (float) Math.toDegrees(mOrientation[0]);
+            if (azimuth < 0) {
+                azimuth += 360;
+            }
+            degreeVal.setText(Float.toString(azimuth) + "\u00B0");
+
+            int dirL = (int) (((azimuth + 22.5)%360)/45);
+            if(dirL >= 0){
+                directionVal.setText(directionLabels[dirL]);
             }
         }
-        float degree = azimuth;
-
-        degreeVal.setText(Float.toString(degree) + "\u00B0");
-
-        int dirL = (int) (((degree + 22.5)%360)/45);
-
-        System.out.println(degree);
-
-        if(dirL >= 0){
-            directionVal.setText(directionLabels[dirL]);
-        }
-
     }
 
     @Override
