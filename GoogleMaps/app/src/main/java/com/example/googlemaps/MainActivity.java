@@ -1,12 +1,12 @@
 package com.example.googlemaps;
-
+import com.google.android.gms.location.LocationResult;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-
+import com.google.android.gms.location.LocationCallback;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -17,6 +17,7 @@ import android.location.LocationManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.RelativeLayout;
@@ -28,7 +29,7 @@ import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
-
+import com.google.android.gms.tasks.OnSuccessListener;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -44,15 +45,14 @@ import java.util.HashMap;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
+    private LocationRequest locationRequest;
     private RelativeLayout home;
     private RecyclerView recycler;
-    private LocationManager locationManager;
     private ArrayList<model> itemsList = new ArrayList<>();
     private MyAdapter adapter;
-    private FusedLocationProviderClient mFusedLocationClient;
+    private FusedLocationProviderClient fusedLocationProviderClient;
     private int permissionCode = 1;
-    private double latitude;
-    private double longitude;
+
 
 
     @Override
@@ -64,23 +64,55 @@ public class MainActivity extends AppCompatActivity {
 
         recycler = findViewById(R.id.recycler_view);
 
-        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        if(ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED){
-            ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION},permissionCode);
+        fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, permissionCode);
         }
-        Location location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-        latitude = location.getLatitude();
-        longitude = location.getLongitude();
-        String pagetoken = "";
-        //double latitude = 30.288765;
-        //double longitude = -97.748341;
 
+        fusedLocationProviderClient.getLastLocation().addOnSuccessListener(this, new OnSuccessListener<Location>() {
+            @Override
+            public void onSuccess(Location location) {
+                if (location != null) {
+                    double latitude = location.getLatitude();
+                    double longitude = location.getLongitude();
+                    String pagetoken = "";
 
-        getData(longitude, latitude, pagetoken);
-        adapter = new MyAdapter(this, itemsList);
-        recycler.setAdapter(adapter);
-        recycler.setLayoutManager(new LinearLayoutManager(this));
+                    getData(longitude, latitude, pagetoken);
+                    adapter = new MyAdapter(MainActivity.this, itemsList);
+                    recycler.setAdapter(adapter);
+                    recycler.setLayoutManager(new LinearLayoutManager(MainActivity.this));
 
+                    // check for location permission
+                    if (ActivityCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                        // request location updates
+                        LocationRequest locationRequest = LocationRequest.create();
+                        locationRequest.setInterval(10000); // update location every 10 seconds
+                        locationRequest.setFastestInterval(5000); // get the location as fast as possible
+                        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY); // set the priority of location updates
+
+                        fusedLocationProviderClient.requestLocationUpdates(locationRequest, new LocationCallback() {
+                            @Override
+                            public void onLocationResult(LocationResult locationResult) {
+                                if (locationResult == null) {
+                                    return;
+                                }
+                                for (Location location : locationResult.getLocations()) {
+                                    double latitude = location.getLatitude();
+                                    double longitude = location.getLongitude();
+                                    String pagetoken = "";
+
+                                    getData(longitude, latitude, pagetoken);
+
+                                }
+                            }
+                        }, null);
+                    } else {
+                        // request location permission
+                        ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, permissionCode);
+                    }
+                }
+            }
+        });
 
     }
 
@@ -105,7 +137,7 @@ public class MainActivity extends AppCompatActivity {
         //longitude = -97.748341;
 //        latitude = 32.93119;
 //        longitude = -96.71530;
-        String url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=" + latitude + "," + longitude + "&radius=100&key=AIzaSyBsTG0CHdXfAe9q-9gpP34zKxwn_wpiEnM"+ "&pagetoken="+pagetoken;
+        String url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=" + latitude + "," + longitude + "&radius=100&key=AIzaSyDo4yW0rEgo-VB222CADT3PdxQhCsWMQgE"+ "&pagetoken="+pagetoken;
         new PlaceTask().execute(url);
     }
 
